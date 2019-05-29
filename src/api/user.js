@@ -26,8 +26,8 @@ export function logout() {
 export function getListByPage(data) {
   return request({
     url: '/system/user/getListByPage',
-    method: 'get',
-    params: { data }
+    method: 'post',
+    data
   })
 }
 export function save(data) {

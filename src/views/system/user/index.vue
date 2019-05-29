@@ -162,7 +162,6 @@ export default {
       listQuery: {
         page: 1,
         limit: 20,
-        importance: undefined,
         realName: undefined,
         username: undefined,
         sort: '+id'
@@ -267,6 +266,7 @@ export default {
               type: 'success',
               duration: 2000
             })
+            this.getList()
           })
         }
       })
