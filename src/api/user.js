@@ -30,4 +30,11 @@ export function getListByPage(data) {
     params: { data }
   })
 }
+export function save(data) {
+  return request({
+    url: '/system/user/save',
+    method: 'post',
+    data
+  })
+}
 
