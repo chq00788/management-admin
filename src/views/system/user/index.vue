@@ -99,7 +99,7 @@
     </el-table>
     <!--分页-->
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
-    <!--弹出框-->
+    <!--添加和修改弹出框-->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="right" label-width="70px" style="width: 500px; margin-left:80px;">
         <el-input v-model="temp.id" type="hidden" />
@@ -122,7 +122,19 @@
         </el-button>
       </div>
     </el-dialog>
-
+    <el-dialog
+      title="角色"
+      :visible.sync="dialogRoleVisible"
+      width="30%"
+      :before-close="handleClose"
+    >
+      <span>确认删除改信息?</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogDelVisible = false">取 消</el-button>
+        <el-button type="primary" @click="deleteData()">确 定</el-button>
+      </span>
+    </el-dialog>
+    <!--删除确认框-->
     <el-dialog
       title="确认"
       :visible.sync="dialogDelVisible"
@@ -200,6 +212,7 @@ export default {
       },
       dialogFormVisible: false,
       dialogDelVisible: false,
+      dialogRoleVisible: false,
       deleteId: undefined,
       dialogStatus: '',
       textMap: {
@@ -210,8 +223,6 @@ export default {
         update: true,
         create: false
       },
-      dialogPvVisible: false,
-      pvData: [],
       rules: {
         realName: [{ required: true, message: '请输入姓名', trigger: 'blur' },
           { min: 1, max: 5, message: '长度在 2 到 5 个字符', trigger: 'blur' }],
@@ -341,7 +352,7 @@ export default {
       })
     },
     handleRole(row) {
-      this.dialogDelVisible = true
+      this.dialogRoleVisible = true
       this.deleteId = row.id
     },
     setRole() {
