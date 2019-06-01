@@ -37,4 +37,24 @@ export function save(data) {
     data
   })
 }
-
+export function update(data) {
+  return request({
+    url: '/system/user/update',
+    method: 'post',
+    data
+  })
+}
+export function updateStatus(data) {
+  return request({
+    url: '/system/user/updateStatus',
+    method: 'post',
+    data
+  })
+}
+export function deleteData(id) {
+  return request({
+    url: '/system/user/delete',
+    method: 'get',
+    params: { id }
+  })
+}

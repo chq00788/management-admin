@@ -2,16 +2,31 @@
   <div class="app-container">
     <!--查询条件区域-->
     <div class="filter-container">
-      <el-input v-model="listQuery.realName" placeholder="姓名" style="width: 200px;" class="filter-item" @keyup.enter.native="handleFilter" />
-      <el-input v-model="listQuery.username" placeholder="账号" style="width: 200px;" class="filter-item" />
-      <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
-        Search
-      </el-button>
+      <el-form :inline="true">
+        <el-form-item label="姓名">
+          <el-input v-model="listQuery.realName" placeholder="姓名" style="width: 200px;" class="filter-item" clearable />
+        </el-form-item>
+        <el-form-item label="账号">
+          <el-input v-model="listQuery.username" placeholder="账号" style="width: 200px;" class="filter-item" clearable />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="listQuery.status" placeholder="请选择状态" clearable>
+            <el-option label="正常" value="0" />
+            <el-option label="禁用" value="1" />
+          </el-select>
+        </el-form-item>
+
+        <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
+          查询
+        </el-button>
+      </el-form>
+    </div>
+    <div style="margin-bottom: 10px;float: right">
       <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
-        Add
+        新增
       </el-button>
       <el-button v-waves :loading="downloadLoading" class="filter-item" type="primary" icon="el-icon-download" @click="handleDownload">
-        Export
+        导出
       </el-button>
     </div>
     <!--数据表格区域-->
@@ -21,6 +36,7 @@
       :data="list"
       border
       fit
+      stripe
       highlight-current-row
       style="width: 100%;"
       @sort-change="sortChange"
@@ -53,7 +69,8 @@
             inactive-color="#ff4949"
             active-value="0"
             inactive-value="1"
-            @change="statusChange(row)"></el-switch>
+            @change="statusChange(row)"
+          />
         </template>
       </el-table-column>
       <el-table-column label="创建时间" width="180px" align="center">
@@ -66,30 +83,31 @@
           <span>{{ row.lastLoginTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="Actions" align="center" width="230" class-name="small-padding fixed-width">
+      <el-table-column label="Actions" align="center" width="240" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            Edit
+          <el-button type="success" size="mini" @click="handleRole(row)">
+            角色
           </el-button>
-          <el-button size="mini" type="danger" @click="handleModifyStatus(row,'deleted')">
-            Delete
+          <el-button type="primary" size="mini" @click="handleUpdate(row)">
+            编辑
+          </el-button>
+          <el-button size="mini" type="danger" @click="handleDelete(row)">
+            删除
           </el-button>
         </template>
       </el-table-column>
     </el-table>
     <!--分页-->
     <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
-
+    <!--弹出框-->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="70px" style="width: 300px; margin-left:50px;">
+      <el-form ref="dataForm" :rules="rules" :model="temp" label-position="right" label-width="70px" style="width: 500px; margin-left:80px;">
+        <el-input v-model="temp.id" type="hidden" />
         <el-form-item label="姓名" prop="realName">
           <el-input v-model="temp.realName" />
         </el-form-item>
         <el-form-item label="账号" prop="username">
-          <el-input v-model="temp.username" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="temp.password" />
+          <el-input v-model="temp.username" :disabled="usernameDisabledMap[dialogStatus]" />
         </el-form-item>
         <el-form-item label="电话" prop="phone">
           <el-input v-model="temp.phone" />
@@ -97,28 +115,31 @@
       </el-form>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">
-          Cancel
+          取消
         </el-button>
         <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
-          Confirm
+          提交
         </el-button>
       </div>
     </el-dialog>
 
-    <el-dialog :visible.sync="dialogPvVisible" title="Reading statistics">
-      <el-table :data="pvData" border fit highlight-current-row style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
+    <el-dialog
+      title="确认"
+      :visible.sync="dialogDelVisible"
+      width="30%"
+      :before-close="handleClose"
+    >
+      <span>确认删除改信息?</span>
       <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">Confirm</el-button>
+        <el-button @click="dialogDelVisible = false">取 消</el-button>
+        <el-button type="primary" @click="deleteData()">确 定</el-button>
       </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { getListByPage, fetchPv, save, updateArticle } from '@/api/user'
+import { getListByPage, save, update, updateStatus, deleteData } from '@/api/user'
 import waves from '@/directive/waves' // waves directive
 import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
@@ -164,6 +185,7 @@ export default {
         limit: 20,
         realName: undefined,
         username: undefined,
+        status: undefined,
         sort: '+id'
       },
       importanceOptions: [1, 2, 3],
@@ -174,21 +196,27 @@ export default {
       temp: {
         id: undefined,
         realName: '',
-        username: '',
-        password: ''
+        username: ''
       },
       dialogFormVisible: false,
+      dialogDelVisible: false,
+      deleteId: undefined,
       dialogStatus: '',
       textMap: {
         update: '修改',
         create: '创建'
       },
+      usernameDisabledMap: {
+        update: true,
+        create: false
+      },
       dialogPvVisible: false,
       pvData: [],
       rules: {
-        realName: [{ required: true, message: 'realName is required', trigger: 'blur' }],
-        username: [{ required: true, message: 'username is required', trigger: 'blur' }],
-        password: [{ required: true, message: 'password is required', trigger: 'blur' }]
+        realName: [{ required: true, message: '请输入姓名', trigger: 'blur' },
+          { min: 1, max: 5, message: '长度在 2 到 5 个字符', trigger: 'blur' }],
+        username: [{ required: true, message: '请输入账号', trigger: 'blur' },
+          { min: 3, max: 50, message: '长度必须大于3个字符', trigger: 'blur' }]
       },
       downloadLoading: false
     }
@@ -262,7 +290,7 @@ export default {
             this.dialogFormVisible = false
             this.$notify({
               title: 'Success',
-              message: 'Created Successfully',
+              message: '新增成功',
               type: 'success',
               duration: 2000
             })
@@ -273,7 +301,6 @@ export default {
     },
     handleUpdate(row) {
       this.temp = Object.assign({}, row) // copy obj
-      this.temp.timestamp = new Date(this.temp.timestamp)
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -284,19 +311,12 @@ export default {
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
-          tempData.timestamp = +new Date(tempData.timestamp) // change Thu Nov 30 2017 16:41:05 GMT+0800 (CST) to 1512031311464
-          updateArticle(tempData).then(() => {
-            for (const v of this.list) {
-              if (v.id === this.temp.id) {
-                const index = this.list.indexOf(v)
-                this.list.splice(index, 1, this.temp)
-                break
-              }
-            }
+          update(tempData).then(() => {
+            this.getList()
             this.dialogFormVisible = false
             this.$notify({
               title: 'Success',
-              message: 'Update Successfully',
+              message: '编辑成功',
               type: 'success',
               duration: 2000
             })
@@ -305,19 +325,35 @@ export default {
       })
     },
     handleDelete(row) {
-      this.$notify({
-        title: 'Success',
-        message: 'Delete Successfully',
-        type: 'success',
-        duration: 2000
-      })
-      const index = this.list.indexOf(row)
-      this.list.splice(index, 1)
+      this.dialogDelVisible = true
+      this.deleteId = row.id
     },
-    handleFetchPv(pv) {
-      fetchPv(pv).then(response => {
-        this.pvData = response.data.pvData
-        this.dialogPvVisible = true
+    deleteData() {
+      deleteData(this.deleteId).then(() => {
+        this.getList()
+        this.dialogDelVisible = false
+        this.$notify({
+          title: 'Success',
+          message: '删除成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
+    },
+    handleRole(row) {
+      this.dialogDelVisible = true
+      this.deleteId = row.id
+    },
+    setRole() {
+      deleteData(this.deleteId).then(() => {
+        this.getList()
+        this.dialogDelVisible = false
+        this.$notify({
+          title: 'Success',
+          message: '删除成功',
+          type: 'success',
+          duration: 2000
+        })
       })
     },
     handleDownload() {
@@ -344,7 +380,14 @@ export default {
       }))
     },
     statusChange(data) {
-      console.log(data)
+      updateStatus(data).then(() => {
+        this.$notify({
+          title: 'Success',
+          message: '更新成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
     }
   }
 }
