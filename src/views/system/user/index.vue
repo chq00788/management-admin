@@ -46,22 +46,22 @@
           <span>{{ row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="姓名" width="150px" align="center">
+      <el-table-column label="姓名" align="center">
         <template slot-scope="{row}">
           <span>{{ row.realName }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="账号" width="150px" align="center">
+      <el-table-column label="账号" align="center">
         <template slot-scope="{row}">
           <span>{{ row.username }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="电话号码" width="150px" align="center">
+      <el-table-column label="电话号码" align="center">
         <template slot-scope="{row}">
           <span>{{ row.phone }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" class-name="status-col" width="100">
+      <el-table-column label="状态" class-name="status-col">
         <template slot-scope="{row}">
           <el-switch
             v-model="row.status"
@@ -73,17 +73,17 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" width="180px" align="center">
+      <el-table-column label="创建时间" align="center">
         <template slot-scope="{row}">
           <span>{{ row.createTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="最近登录时间" width="180px" align="center">
+      <el-table-column label="最近登录时间" align="center">
         <template slot-scope="{row}">
           <span>{{ row.lastLoginTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="Actions" align="center" width="240" fixed="right" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="240" fixed="right" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
           <el-button type="success" size="mini" @click="handleRole(row)">
             角色
@@ -128,7 +128,9 @@
       width="30%"
       :before-close="handleClose"
     >
-      <span>确认删除改信息?</span>
+      <el-checkbox-group v-model="checkedRoles">
+        <el-checkbox v-for="role in roles" :key="role.id" :label="role.roleName">{{ role.roleName }}</el-checkbox>
+      </el-checkbox-group>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogDelVisible = false">取 消</el-button>
         <el-button type="primary" @click="deleteData()">确 定</el-button>
@@ -151,23 +153,9 @@
 </template>
 
 <script>
-import { getListByPage, save, update, updateStatus, deleteData } from '@/api/user'
+import { getListByPage, save, update, updateStatus, deleteData, getRoles, getUserRole } from '@/api/user'
 import waves from '@/directive/waves' // waves directive
-import { parseTime } from '@/utils'
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
-
-const calendarTypeOptions = [
-  { key: 'CN', display_name: 'China' },
-  { key: 'US', display_name: 'USA' },
-  { key: 'JP', display_name: 'Japan' },
-  { key: 'EU', display_name: 'Eurozone' }
-]
-
-// arr to obj, such as { CN : "China", US : "USA" }
-const calendarTypeKeyValue = calendarTypeOptions.reduce((acc, cur) => {
-  acc[cur.key] = cur.display_name
-  return acc
-}, {})
 
 export default {
   name: 'ComplexTable',
@@ -181,9 +169,6 @@ export default {
         1: 'danger'
       }
       return statusMap[status]
-    },
-    typeFilter(type) {
-      return calendarTypeKeyValue[type]
     }
   },
   data() {
@@ -200,10 +185,9 @@ export default {
         status: undefined,
         sort: '+id'
       },
-      importanceOptions: [1, 2, 3],
-      calendarTypeOptions,
+      roles: [],
+      checkedRoles: [],
       sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
-      statusOptions: ['published', 'draft', 'deleted'],
       showReviewer: false,
       temp: {
         id: undefined,
@@ -234,6 +218,7 @@ export default {
   },
   created() {
     this.getList()
+    this.getRole()
   },
   methods: {
     // 查询数据列表
@@ -351,9 +336,17 @@ export default {
         })
       })
     },
+    async getRole() {
+      const res = await getRoles()
+      const data = res.result
+      this.roles = data
+      console.log(this.roles)
+    },
     handleRole(row) {
-      this.dialogRoleVisible = true
-      this.deleteId = row.id
+      getUserRole(row.id).then((res) => {
+        this.checkedRoles = res.result
+        this.dialogRoleVisible = true
+      })
     },
     setRole() {
       deleteData(this.deleteId).then(() => {
@@ -381,15 +374,6 @@ export default {
           this.downloadLoading = false
         })
     },
-    formatJson(filterVal, jsonData) {
-      return jsonData.map(v => filterVal.map(j => {
-        if (j === 'timestamp') {
-          return parseTime(v[j])
-        } else {
-          return v[j]
-        }
-      }))
-    },
     statusChange(data) {
       updateStatus(data).then(() => {
         this.$notify({
@@ -399,6 +383,9 @@ export default {
           duration: 2000
         })
       })
+    },
+    handleClose() {
+
     }
   }
 }

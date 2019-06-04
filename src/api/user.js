@@ -58,3 +58,16 @@ export function deleteData(id) {
     params: { id }
   })
 }
+export function getRoles() {
+  return request({
+    url: '/system/role/getList',
+    method: 'get'
+  })
+}
+export function getUserRole(id) {
+  return request({
+    url: '/system/user/getRole',
+    method: 'get',
+    params: { id }
+  })
+}
