@@ -126,14 +126,13 @@
       title="角色"
       :visible.sync="dialogRoleVisible"
       width="30%"
-      :before-close="handleClose"
     >
-      <el-checkbox-group v-model="checkedRoles">
-        <el-checkbox v-for="role in roles" :key="role.id" :label="role.roleName">{{ role.roleName }}</el-checkbox>
+      <el-checkbox-group v-model="checkedRoles" @change="handleCheckedRoleChange">
+        <el-checkbox v-for="role in roles" :key="role.id" :label="role.id">{{ role.roleName }}</el-checkbox>
       </el-checkbox-group>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogDelVisible = false">取 消</el-button>
-        <el-button type="primary" @click="deleteData()">确 定</el-button>
+        <el-button @click="dialogRoleVisible = false">取 消</el-button>
+        <el-button type="primary" @click="saveRole()">确 定</el-button>
       </span>
     </el-dialog>
     <!--删除确认框-->
@@ -141,7 +140,6 @@
       title="确认"
       :visible.sync="dialogDelVisible"
       width="30%"
-      :before-close="handleClose"
     >
       <span>确认删除改信息?</span>
       <span slot="footer" class="dialog-footer">
@@ -153,7 +151,7 @@
 </template>
 
 <script>
-import { getListByPage, save, update, updateStatus, deleteData, getRoles, getUserRole } from '@/api/user'
+import { getListByPage, save, update, updateStatus, deleteData, getRoles, getUserRole, saveRole } from '@/api/user'
 import waves from '@/directive/waves' // waves directive
 import Pagination from '@/components/Pagination' // secondary package based on el-pagination
 
@@ -173,6 +171,7 @@ export default {
   },
   data() {
     return {
+      id: undefined,
       tableKey: 0,
       list: null,
       total: 0,
@@ -185,6 +184,7 @@ export default {
         status: undefined,
         sort: '+id'
       },
+      userId: undefined,
       roles: [],
       checkedRoles: [],
       sortOptions: [{ label: 'ID Ascending', key: '+id' }, { label: 'ID Descending', key: '-id' }],
@@ -340,39 +340,32 @@ export default {
       const res = await getRoles()
       const data = res.result
       this.roles = data
-      console.log(this.roles)
     },
     handleRole(row) {
+      this.userId = row.id
       getUserRole(row.id).then((res) => {
         this.checkedRoles = res.result
         this.dialogRoleVisible = true
       })
     },
-    setRole() {
-      deleteData(this.deleteId).then(() => {
-        this.getList()
-        this.dialogDelVisible = false
+    saveRole() {
+      const data = {}
+      data.id = this.userId
+      data.roleIds = this.checkedRoles
+      console.log(data)
+      saveRole(data).then(() => {
+        this.dialogRoleVisible = false
+        this.userId = undefined
+        this.checkedRoles = []
         this.$notify({
           title: 'Success',
-          message: '删除成功',
+          message: '设置成功',
           type: 'success',
           duration: 2000
         })
       })
     },
     handleDownload() {
-      this.downloadLoading = true
-        import('@/vendor/Export2Excel').then(excel => {
-          const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-          const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-          const data = this.formatJson(filterVal, this.list)
-          excel.export_json_to_excel({
-            header: tHeader,
-            data,
-            filename: 'table-list'
-          })
-          this.downloadLoading = false
-        })
     },
     statusChange(data) {
       updateStatus(data).then(() => {
@@ -384,8 +377,8 @@ export default {
         })
       })
     },
-    handleClose() {
-
+    handleCheckedRoleChange(value) {
+      this.checkedRoles = value
     }
   }
 }

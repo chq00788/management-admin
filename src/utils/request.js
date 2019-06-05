@@ -21,6 +21,9 @@ service.interceptors.request.use(
       // please modify it according to the actual situation
       config.headers['Authorization'] = getToken()
     }
+    if (store.getters.username) {
+      config.headers['username'] = store.getters.username
+    }
     return config
   },
   error => {

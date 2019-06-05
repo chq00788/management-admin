@@ -71,3 +71,10 @@ export function getUserRole(id) {
     params: { id }
   })
 }
+export function saveRole(data) {
+  return request({
+    url: '/system/user/saveRole',
+    method: 'post',
+    data
+  })
+}
