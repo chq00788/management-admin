@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { MessageBox, Message } from 'element-ui'
 import store from '@/store'
-import { getToken } from '@/utils/auth'
+import { getToken, setToken } from '@/utils/auth'
 
 // create an axios instance
 const service = axios.create({
@@ -28,7 +28,7 @@ service.interceptors.request.use(
   },
   error => {
     // do something with request error
-    console.log(error) // for debug
+    // console.log(error) // for debug
     return Promise.reject(error)
   }
 )
@@ -50,6 +50,24 @@ service.interceptors.response.use(
 
     // if the custom code is not 20000, it is judged as an error.
     if (res.code !== 200) {
+      if (res.code === 1001) {
+        const data = res.result
+        setToken(data.token)
+        const config = response.config
+        config.headers['Authorization'] = getToken()
+        config.headers['username'] = store.getters.username
+
+        const back = new Promise(function(resolve) {
+          setTimeout(function() {
+            resolve()
+          }, 1000)
+        })
+        // 返回axios的实体，重试请求
+        return back.then(function() {
+          return axios(config)
+        })
+      }
+
       Message({
         message: res.msg || 'Error',
         type: 'error',
