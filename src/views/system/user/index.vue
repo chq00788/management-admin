@@ -226,7 +226,6 @@ export default {
       this.listLoading = true
       getListByPage(this.listQuery).then(response => {
         this.list = response.result
-        console.log(response.result)
         this.total = parseInt(response.total)
         // Just to simulate the time of the request
         setTimeout(() => {

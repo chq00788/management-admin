@@ -34,73 +34,65 @@ service.interceptors.request.use(
 )
 
 // response interceptor
-service.interceptors.response.use(
-  /**
-   * If you want to get http information such as headers or status
-   * Please return  response => response
-  */
+service.interceptors.response.use(response => {
+  const res = response.data
 
-  /**
-   * Determine the request status by custom code
-   * Here is just an example
-   * You can also judge the status by HTTP Status Code
-   */
-  response => {
-    const res = response.data
-
-    // if the custom code is not 20000, it is judged as an error.
-    if (res.code !== 200) {
-      if (res.code === 1001) {
-        const data = res.result
-        setToken(data.token)
-        const config = response.config
-        config.headers['Authorization'] = getToken()
-        config.headers['username'] = store.getters.username
-
-        const back = new Promise(function(resolve) {
-          setTimeout(function() {
-            resolve()
-          }, 1000)
-        })
-        // 返回axios的实体，重试请求
-        return back.then(function() {
-          return axios(config)
-        })
-      }
-
-      Message({
-        message: res.msg || 'Error',
-        type: 'error',
-        duration: 5 * 1000
-      })
-
-      // 50008: Illegal token; 50012: Other clients logged in; 50014: Token expired;
-      if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
-        // to re-login
-        MessageBox.confirm('You have been logged out, you can cancel to stay on this page, or log in again', 'Confirm logout', {
-          confirmButtonText: 'Re-Login',
-          cancelButtonText: 'Cancel',
-          type: 'warning'
-        }).then(() => {
-          store.dispatch('user/resetToken').then(() => {
-            location.reload()
-          })
-        })
-      }
-      return Promise.reject(new Error(res.msg || 'Error'))
-    } else {
-      return res
+  // if the custom code is not 20000, it is judged as an error.
+  if (res.code !== 200) {
+    if (res.code === 1001) {
+      const data = res.result
+      setToken(data.token)
+      const config = response.config
+      config.headers['Authorization'] = getToken()
+      config.headers['username'] = store.getters.username
+      location.reload()
+      return
+      // const back = new Promise(function(resolve) {
+      //   setTimeout(function() {
+      //     resolve()
+      //   }, 1000)
+      // })
+      // // 返回axios的实体，重试请求
+      // return back.then(function() {
+      //   const result = axios.request(config)
+      //   console.log(result)
+      //   return result
+      // })
     }
-  },
-  error => {
-    console.log('err' + error) // for debug
+
     Message({
-      message: error.message,
+      message: res.msg || 'Error',
       type: 'error',
       duration: 5 * 1000
     })
-    return Promise.reject(error)
+
+    // 50008: Illegal token; 50012: Other clients logged in; 50014: Token expired;
+    if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
+      // to re-login
+      MessageBox.confirm('You have been logged out, you can cancel to stay on this page, or log in again', 'Confirm logout', {
+        confirmButtonText: 'Re-Login',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }).then(() => {
+        store.dispatch('user/resetToken').then(() => {
+          location.reload()
+        })
+      })
+    }
+    return Promise.reject(new Error(res.msg || 'Error'))
+  } else {
+    return res
   }
+},
+error => {
+  console.log('err' + error) // for debug
+  Message({
+    message: error.message,
+    type: 'error',
+    duration: 5 * 1000
+  })
+  return Promise.reject(error)
+}
 )
 
 export default service
