@@ -200,7 +200,7 @@ export default {
       deleteId: undefined,
       dialogStatus: '',
       textMap: {
-        update: '修改',
+        update: '编辑',
         create: '创建'
       },
       usernameDisabledMap: {

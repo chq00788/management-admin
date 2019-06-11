@@ -1,5 +1,13 @@
 import request from '@/utils/request'
 
+export function getListByPage(data) {
+  return request({
+    url: '/system/role/getListByPage',
+    method: 'post',
+    data
+  })
+}
+
 export function getRoutes() {
   return request({
     url: '/routes',
@@ -14,25 +22,33 @@ export function getRoles() {
   })
 }
 
-export function addRole(data) {
+export function save(data) {
   return request({
-    url: '/role',
+    url: '/system/role/save',
     method: 'post',
     data
   })
 }
 
-export function updateRole(id, data) {
+export function update(data) {
   return request({
-    url: `/role/${id}`,
+    url: '/system/role/update',
     method: 'put',
     data
   })
 }
 
-export function deleteRole(id) {
+export function updateStatus(data) {
   return request({
-    url: `/role/${id}`,
-    method: 'delete'
+    url: '/system/role/updateStatus',
+    method: 'post',
+    data
+  })
+}
+export function deleteData(id) {
+  return request({
+    url: '/system/role/delete',
+    method: 'get',
+    params: { id }
   })
 }

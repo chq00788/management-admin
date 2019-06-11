@@ -1,76 +1,247 @@
 <template>
   <div class="app-container">
-    <el-input v-model="filterText" placeholder="Filter keyword" style="margin-bottom:30px;" />
+    <div style="margin-bottom: 10px;float: right">
+      <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
+        新增
+      </el-button>
+    </div>
+    <el-table
+      :key="id"
+      v-loading="listLoading"
+      :data="list"
+      border
+      fit
+      stripe
+      highlight-current-row
+      style="width: 100%;margin-top:30px;"
+    >
+      <el-table-column label="编号" prop="id" sortable="custom" align="center" width="80">
+        <template slot-scope="{row}">
+          <span>{{ row.id }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="名称" width="220">
+        <template slot-scope="scope">
+          {{ scope.row.roleName }}
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="编码" width="220">
+        <template slot-scope="scope">
+          {{ scope.row.roleCode }}
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" class-name="status-col">
+        <template slot-scope="{row}">
+          <el-switch
+            v-model="row.status"
+            active-color="#13ce66"
+            inactive-color="#ff4949"
+            active-value="0"
+            inactive-value="1"
+            @change="statusChange(row)"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column align="header-center" label="描述">
+        <template slot-scope="scope">
+          {{ scope.row.description }}
+        </template>
+      </el-table-column>
+      <el-table-column label="创建时间" align="center">
+        <template slot-scope="scope">
+          <span>{{ scope.row.createTime }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column align="center" label="操作">
+        <template slot-scope="scope">
+          <el-button type="success" size="mini" @click="handleRole(scope.row)">权限</el-button>
+          <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+          <el-button type="danger" size="mini" @click="handleDelete(scope.row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <!--分页-->
+    <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
 
-    <el-tree
-      ref="tree2"
-      :data="data2"
-      :props="defaultProps"
-      :filter-node-method="filterNode"
-      class="filter-tree"
-      default-expand-all
-    />
-
+    <!--添加和修改弹出框-->
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
+      <el-form ref="dataForm" :rules="rules" :model="dataTemp" label-position="right" label-width="70px" style="width: 500px; margin-left:80px;">
+        <el-input v-model="dataTemp.id" type="hidden" />
+        <el-form-item label="名称" prop="roleName">
+          <el-input v-model="dataTemp.roleName" />
+        </el-form-item>
+        <el-form-item label="编码" prop="roleCode">
+          <el-input v-model="dataTemp.roleCode" />
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input v-model="dataTemp.description" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="dialogFormVisible = false">
+          取消
+        </el-button>
+        <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
+          提交
+        </el-button>
+      </div>
+    </el-dialog>
+    <!--删除确认框-->
+    <el-dialog
+      title="确认"
+      :visible.sync="dialogDelVisible"
+      width="30%"
+    >
+      <span>确认删除改信息?</span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogDelVisible = false">取 消</el-button>
+        <el-button type="primary" @click="deleteData()">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-export default {
+import { getListByPage, save, update, updateStatus, deleteData } from '@/api/role'
+import Pagination from '@/components/Pagination'
+import waves from '@/directive/waves' // waves directive
 
+export default {
+  components: { Pagination },
+  directives: { waves },
   data() {
     return {
-      filterText: '',
-      data2: [{
-        id: 1,
-        label: 'Level one 1',
-        children: [{
-          id: 4,
-          label: 'Level two 1-1',
-          children: [{
-            id: 9,
-            label: 'Level three 1-1-1'
-          }, {
-            id: 10,
-            label: 'Level three 1-1-2'
-          }]
-        }]
-      }, {
-        id: 2,
-        label: 'Level one 2',
-        children: [{
-          id: 5,
-          label: 'Level two 2-1'
-        }, {
-          id: 6,
-          label: 'Level two 2-2'
-        }]
-      }, {
-        id: 3,
-        label: 'Level one 3',
-        children: [{
-          id: 7,
-          label: 'Level two 3-1'
-        }, {
-          id: 8,
-          label: 'Level two 3-2'
-        }]
-      }],
-      defaultProps: {
-        children: 'children',
-        label: 'label'
+      id: undefined,
+      tableKey: 0,
+      list: null,
+      total: 0,
+      listLoading: true,
+      dialogFormVisible: false,
+      dialogDelVisible: false,
+      dialogStatus: '',
+      deleteId: undefined,
+      listQuery: {
+        page: 1,
+        limit: 20,
+        sort: '+id'
+      },
+      dataTemp: {
+        id: undefined,
+        roleName: '',
+        roleCode: '',
+        description: ''
+      },
+      textMap: {
+        update: '编辑',
+        create: '创建'
+      },
+      rules: {
+        roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' },
+          { min: 1, max: 5, message: '长度在 2 到 5 个字符', trigger: 'blur' }],
+        roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' },
+          { min: 3, max: 50, message: '长度必须大于3个字符', trigger: 'blur' }]
       }
     }
   },
-  watch: {
-    filterText(val) {
-      this.$refs.tree2.filter(val)
-    }
+  created() {
+    this.getList()
   },
-
   methods: {
-    filterNode(value, data) {
-      if (!value) return true
-      return data.label.indexOf(value) !== -1
+    // 查询数据列表
+    getList() {
+      this.listLoading = true
+      getListByPage(this.listQuery).then(response => {
+        this.list = response.result
+        this.total = parseInt(response.total)
+        // Just to simulate the time of the request
+        setTimeout(() => {
+          this.listLoading = false
+        }, 500)
+      })
+    },
+    resetTemp() {
+      this.dataTemp = {
+        id: undefined,
+        roleName: '',
+        roleCode: '',
+        description: ''
+      }
+    },
+    handleCreate() {
+      this.resetTemp()
+      this.dialogStatus = 'create'
+      this.dialogFormVisible = true
+      this.$nextTick(() => {
+        this.$refs['dataForm'].clearValidate()
+      })
+    },
+    createData() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          save(this.dataTemp).then(() => {
+            this.list.unshift(this.dataTemp)
+            this.dialogFormVisible = false
+            this.$notify({
+              title: 'Success',
+              message: '新增成功',
+              type: 'success',
+              duration: 2000
+            })
+            this.getList()
+          })
+        }
+      })
+    },
+    handleUpdate(row) {
+      this.dataTemp = Object.assign({}, row) // copy obj
+      this.dialogStatus = 'update'
+      this.dialogFormVisible = true
+      this.$nextTick(() => {
+        this.$refs['dataForm'].clearValidate()
+      })
+    },
+    updateData() {
+      this.$refs['dataForm'].validate((valid) => {
+        if (valid) {
+          const tempData = Object.assign({}, this.dataTemp)
+          update(tempData).then(() => {
+            this.getList()
+            this.dialogFormVisible = false
+            this.$notify({
+              title: 'Success',
+              message: '编辑成功',
+              type: 'success',
+              duration: 2000
+            })
+          })
+        }
+      })
+    },
+    statusChange(data) {
+      updateStatus(data).then(() => {
+        this.$notify({
+          title: 'Success',
+          message: '更新成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
+    },
+    handleDelete(row) {
+      this.dialogDelVisible = true
+      this.deleteId = row.id
+    },
+    deleteData() {
+      deleteData(this.deleteId).then(() => {
+        this.getList()
+        this.dialogDelVisible = false
+        this.$notify({
+          title: 'Success',
+          message: '删除成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
     }
   }
 }
