@@ -52,3 +52,9 @@ export function deleteData(id) {
     params: { id }
   })
 }
+export function getPermTree() {
+  return request({
+    url: '/system/perm/getTreeList',
+    method: 'get'
+  })
+}

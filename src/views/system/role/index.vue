@@ -1,7 +1,13 @@
 <template>
   <div class="app-container">
     <div style="margin-bottom: 10px;float: right">
-      <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
+      <el-button
+        class="filter-item"
+        style="margin-left: 10px;"
+        type="primary"
+        icon="el-icon-edit"
+        @click="handleCreate"
+      >
         新增
       </el-button>
     </div>
@@ -54,18 +60,31 @@
       </el-table-column>
       <el-table-column align="center" label="操作">
         <template slot-scope="scope">
-          <el-button type="success" size="mini" @click="handleRole(scope.row)">权限</el-button>
+          <el-button type="success" size="mini" @click="handlePerm(scope.row)">权限</el-button>
           <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
           <el-button type="danger" size="mini" @click="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
     <!--分页-->
-    <pagination v-show="total>0" :total="total" :page.sync="listQuery.page" :limit.sync="listQuery.limit" @pagination="getList" />
+    <pagination
+      v-show="total>0"
+      :total="total"
+      :page.sync="listQuery.page"
+      :limit.sync="listQuery.limit"
+      @pagination="getList"
+    />
 
     <!--添加和修改弹出框-->
     <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form ref="dataForm" :rules="rules" :model="dataTemp" label-position="right" label-width="70px" style="width: 500px; margin-left:80px;">
+      <el-form
+        ref="dataForm"
+        :rules="rules"
+        :model="dataTemp"
+        label-position="right"
+        label-width="70px"
+        style="width: 500px; margin-left:80px;"
+      >
         <el-input v-model="dataTemp.id" type="hidden" />
         <el-form-item label="名称" prop="roleName">
           <el-input v-model="dataTemp.roleName" />
@@ -98,11 +117,34 @@
         <el-button type="primary" @click="deleteData()">确 定</el-button>
       </span>
     </el-dialog>
+    <!--权限设置-->
+    <el-dialog
+      title="权限设置"
+      :visible.sync="dialogPermVisible"
+      width="30%"
+    >
+        <div class="perm_dialog">
+          <el-tree
+            ref="tree"
+            :data="perms"
+            show-checkbox
+            default-expand-all
+            node-key="id"
+            empty-text="暂无内容"
+            highlight-current
+            :props="defaultProps"
+          />
+        </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogPermVisible = false">取 消</el-button>
+        <el-button type="primary" @click="savePerm()">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getListByPage, save, update, updateStatus, deleteData } from '@/api/role'
+import { getListByPage, save, update, updateStatus, deleteData, getPermTree } from '@/api/role'
 import Pagination from '@/components/Pagination'
 import waves from '@/directive/waves' // waves directive
 
@@ -118,8 +160,10 @@ export default {
       listLoading: true,
       dialogFormVisible: false,
       dialogDelVisible: false,
+      dialogPermVisible: false,
       dialogStatus: '',
       deleteId: undefined,
+      roleId: undefined,
       listQuery: {
         page: 1,
         limit: 20,
@@ -140,11 +184,18 @@ export default {
           { min: 1, max: 5, message: '长度在 2 到 5 个字符', trigger: 'blur' }],
         roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' },
           { min: 3, max: 50, message: '长度必须大于3个字符', trigger: 'blur' }]
+      },
+      checkedPerms: [],
+      perms: [],
+      defaultProps: {
+        children: 'children',
+        label: 'permName'
       }
     }
   },
   created() {
     this.getList()
+    this.getPermTree()
   },
   methods: {
     // 查询数据列表
@@ -158,6 +209,11 @@ export default {
           this.listLoading = false
         }, 500)
       })
+    },
+    async getPermTree() {
+      const res = await getPermTree()
+      const data = res.result
+      this.perms = data
     },
     resetTemp() {
       this.dataTemp = {
@@ -242,8 +298,23 @@ export default {
           duration: 2000
         })
       })
+    },
+    handleCheckedPermChange() {
+
+    },
+    savePerm() {
+
+    },
+    handlePerm(data) {
+      this.roleId = data.id
+      this.dialogPermVisible = true
     }
   }
 }
 </script>
 
+<style scoped>
+  .perm_dialog {
+    height: 40vh;overflow: auto;
+  }
+</style>
