@@ -58,3 +58,10 @@ export function getPermTree() {
     method: 'get'
   })
 }
+export function getPerm(id) {
+  return request({
+    url: '/system/role/getPerm',
+    method: 'get',
+    params: { id }
+  })
+}

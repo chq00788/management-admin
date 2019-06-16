@@ -26,17 +26,17 @@
           <span>{{ row.id }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="名称" width="220">
+      <el-table-column align="center" label="名称">
         <template slot-scope="scope">
           {{ scope.row.roleName }}
         </template>
       </el-table-column>
-      <el-table-column align="center" label="编码" width="220">
+      <el-table-column align="center" label="编码">
         <template slot-scope="scope">
           {{ scope.row.roleCode }}
         </template>
       </el-table-column>
-      <el-table-column label="状态" class-name="status-col">
+      <el-table-column label="状态" align="center" width="100">
         <template slot-scope="{row}">
           <el-switch
             v-model="row.status"
@@ -48,7 +48,7 @@
           />
         </template>
       </el-table-column>
-      <el-table-column align="header-center" label="描述">
+      <el-table-column align="center" label="描述">
         <template slot-scope="scope">
           {{ scope.row.description }}
         </template>
@@ -58,7 +58,7 @@
           <span>{{ scope.row.createTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column align="center" label="操作">
+      <el-table-column align="center" label="操作" width="240" fixed="right">
         <template slot-scope="scope">
           <el-button type="success" size="mini" @click="handlePerm(scope.row)">权限</el-button>
           <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
@@ -123,18 +123,23 @@
       :visible.sync="dialogPermVisible"
       width="30%"
     >
-        <div class="perm_dialog">
-          <el-tree
-            ref="tree"
-            :data="perms"
-            show-checkbox
-            default-expand-all
-            node-key="id"
-            empty-text="暂无内容"
-            highlight-current
-            :props="defaultProps"
-          />
-        </div>
+      <div class="perm_dialog">
+        <el-tree
+          ref="tree"
+          :data="perms"
+          show-checkbox
+          default-expand-all
+          node-key="id"
+          empty-text="暂无内容"
+          highlight-current
+          :check-strictly="false"
+          :check-on-click-node="true"
+          :expand-on-click-node="false"
+          :props="defaultProps"
+          :default-checked-keys="checkedPerms"
+          @check-change="handleCheckedPermChange"
+        />
+      </div>
       <span slot="footer" class="dialog-footer">
         <el-button @click="dialogPermVisible = false">取 消</el-button>
         <el-button type="primary" @click="savePerm()">确 定</el-button>
@@ -144,7 +149,7 @@
 </template>
 
 <script>
-import { getListByPage, save, update, updateStatus, deleteData, getPermTree } from '@/api/role'
+import { getListByPage, save, update, updateStatus, deleteData, getPermTree, getPerm } from '@/api/role'
 import Pagination from '@/components/Pagination'
 import waves from '@/directive/waves' // waves directive
 
@@ -299,15 +304,20 @@ export default {
         })
       })
     },
-    handleCheckedPermChange() {
-
+    handleCheckedPermChange(data) {
+      console.log(data)
     },
     savePerm() {
-
+      console.log(this.$refs.tree.getCheckedKeys())
     },
     handlePerm(data) {
       this.roleId = data.id
-      this.dialogPermVisible = true
+      getPerm(data.id).then(response => {
+        this.dialogPermVisible = true
+        this.$nextTick(function() {
+          this.$refs.tree.setCheckedKeys(response.result)
+        })
+      })
     }
   }
 }
