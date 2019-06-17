@@ -65,3 +65,11 @@ export function getPerm(id) {
     params: { id }
   })
 }
+
+export function savePerm(data) {
+  return request({
+    url: '/system/role/savePerm',
+    method: 'post',
+    data
+  })
+}

@@ -149,7 +149,7 @@
 </template>
 
 <script>
-import { getListByPage, save, update, updateStatus, deleteData, getPermTree, getPerm } from '@/api/role'
+import { getListByPage, save, update, updateStatus, deleteData, getPermTree, getPerm, savePerm } from '@/api/role'
 import Pagination from '@/components/Pagination'
 import waves from '@/directive/waves' // waves directive
 
@@ -308,7 +308,19 @@ export default {
       console.log(data)
     },
     savePerm() {
-      console.log(this.$refs.tree.getCheckedKeys())
+      const data = {}
+      data.id = this.roleId
+      data.permIds = this.$refs.tree.getCheckedKeys()
+      savePerm(data).then(() => {
+        this.dialogPermVisible = false
+        this.roleId = undefined
+        this.$notify({
+          title: 'Success',
+          message: '设置成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
     },
     handlePerm(data) {
       this.roleId = data.id

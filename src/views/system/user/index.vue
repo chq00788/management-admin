@@ -352,7 +352,6 @@ export default {
       const data = {}
       data.id = this.userId
       data.roleIds = this.checkedRoles
-      console.log(data)
       saveRole(data).then(() => {
         this.dialogRoleVisible = false
         this.userId = undefined
