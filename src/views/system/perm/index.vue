@@ -1,76 +1,102 @@
 <template>
   <div class="app-container">
-    <el-form ref="form" :model="form" label-width="120px">
-      <el-form-item label="Activity name">
-        <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="Activity zone">
-        <el-select v-model="form.region" placeholder="please select your zone">
-          <el-option label="Zone one" value="shanghai" />
-          <el-option label="Zone two" value="beijing" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="Activity time">
-        <el-col :span="11">
-          <el-date-picker v-model="form.date1" type="date" placeholder="Pick a date" style="width: 100%;" />
-        </el-col>
-        <el-col :span="2" class="line">-</el-col>
-        <el-col :span="11">
-          <el-time-picker v-model="form.date2" type="fixed-time" placeholder="Pick a time" style="width: 100%;" />
-        </el-col>
-      </el-form-item>
-      <el-form-item label="Instant delivery">
-        <el-switch v-model="form.delivery" />
-      </el-form-item>
-      <el-form-item label="Activity type">
-        <el-checkbox-group v-model="form.type">
-          <el-checkbox label="Online activities" name="type" />
-          <el-checkbox label="Promotion activities" name="type" />
-          <el-checkbox label="Offline activities" name="type" />
-          <el-checkbox label="Simple brand exposure" name="type" />
-        </el-checkbox-group>
-      </el-form-item>
-      <el-form-item label="Resources">
-        <el-radio-group v-model="form.resource">
-          <el-radio label="Sponsor" />
-          <el-radio label="Venue" />
-        </el-radio-group>
-      </el-form-item>
-      <el-form-item label="Activity form">
-        <el-input v-model="form.desc" type="textarea" />
-      </el-form-item>
-      <el-form-item>
-        <el-button type="primary" @click="onSubmit">Create</el-button>
-        <el-button @click="onCancel">Cancel</el-button>
-      </el-form-item>
-    </el-form>
+    <el-table
+      :data="list"
+      style="width: 100%;margin-bottom: 20px;"
+      row-key="id"
+      border
+      :tree-props="{children: 'children', hasChildren: 'hasChildren'}"
+    >
+      <el-table-column
+        prop="permName"
+        label="名称"
+      />
+      <el-table-column
+        prop="permCode"
+        label="标识"
+      />
+      <el-table-column label="类型" class-name="status-col" width="100">
+        <template slot-scope="{row}">
+          <el-tag :type="row.permType | typeFilter">
+            {{ typeMap[row.permType] }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="permUrl"
+        label="路径"
+      />
+      <el-table-column label="状态" align="center" width="100">
+        <template slot-scope="{row}">
+          <el-switch
+            v-model="row.status"
+            active-color="#13ce66"
+            inactive-color="#ff4949"
+            active-value="0"
+            inactive-value="1"
+            @change="statusChange(row)"
+          />
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="createTime"
+        label="创建时间"
+      />
+      <el-table-column label="操作" align="center" width="240" fixed="right" class-name="small-padding fixed-width">
+        <template slot-scope="{row}">
+          <el-button type="success" size="mini" @click="handleRole(row)">
+            角色
+          </el-button>
+          <el-button type="primary" size="mini" @click="handleUpdate(row)">
+            编辑
+          </el-button>
+          <el-button size="mini" type="danger" @click="handleDelete(row)">
+            删除
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 
 <script>
+import { getListByPage } from '@/api/perm'
+import waves from '@/directive/waves' // waves directive
 export default {
+  directives: { waves },
+  filters: {
+    typeFilter(permType) {
+      const statusMap = {
+        1: '',
+        2: 'success',
+        3: 'warning'
+      }
+      return statusMap[permType]
+    }
+  },
   data() {
     return {
-      form: {
-        name: '',
-        region: '',
-        date1: '',
-        date2: '',
-        delivery: false,
-        type: [],
-        resource: '',
-        desc: ''
+      list: null,
+      listLoading: false,
+      typeMap: {
+        1: '目录',
+        2: '菜单',
+        3: '按钮'
       }
     }
   },
+  created() {
+    this.getList()
+  },
   methods: {
-    onSubmit() {
-      this.$message('submit!')
-    },
-    onCancel() {
-      this.$message({
-        message: 'cancel!',
-        type: 'warning'
+    // 查询数据列表
+    getList() {
+      this.listLoading = true
+      getListByPage().then(response => {
+        this.list = response.result
+        setTimeout(() => {
+          this.listLoading = false
+        }, 500)
       })
     }
   }
@@ -78,8 +104,6 @@ export default {
 </script>
 
 <style scoped>
-.line{
-  text-align: center;
-}
+
 </style>
 
