@@ -7,3 +7,11 @@ export function getListByPage(data) {
     data
   })
 }
+
+export function save(data) {
+  return request({
+    url: '/system/perm/save',
+    method: 'post',
+    data
+  })
+}
