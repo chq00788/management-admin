@@ -15,3 +15,18 @@ export function save(data) {
     data
   })
 }
+
+export function update(data) {
+  return request({
+    url: '/system/perm/update',
+    method: 'post',
+    data
+  })
+}
+export function deleteData(id) {
+  return request({
+    url: '/system/perm/delete',
+    method: 'get',
+    params: { id }
+  })
+}
